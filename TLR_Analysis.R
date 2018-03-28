@@ -7,6 +7,8 @@ library(devtools)
 library(Seurat)
 library(dplyr)
 library(Matrix)
+library(ggplot2)
+library(RColorBrewer)
 
 # Load dataset (10X reads in ) 
 test.data <- Read10X("/Users/jimmy/Documents/Large Data/SC RNA-Seq-Mouse/Rawdata/FC_03294/Unaligned_10xc_PF_TenX_mm1/cellranger_count/Garren1_Control_SI-GA-A1/outs/filtered_gene_bc_matrices/mm10")
@@ -496,9 +498,9 @@ new.cluster.ids <- c("NK Cells",
                      "T-Cells",
                      "Mature Mac",
                      "FoxP3 Tregs",
-                     "Immature Mac",
+                     "Monocytes",
                      "DCs",
-                     "B-Cells")
+                     "DC-2")
 
 test@ident <- plyr::mapvalues(x = test@ident,
                               from = current.cluster.ids,
@@ -511,13 +513,13 @@ TSNEPlot(object = test, do.label = TRUE, pt.size = 0.5)
 # comparing the clusters. For example, adjusting the parameters may lead to the CD4 T cells subdividing into two groups.
 
 # stash cluster identities for later
-test <- StashIdent(object = test, save.name = "ClusterNames_0.6")
+#test <- StashIdent(object = test, save.name = "ClusterNames_0.6")
 
-test <- FindClusters(object = test,
-                     reduction.type = "pca",
-                     dims.use = 1:10,
-                     resolution = 0.8,
-                     print.output = FALSE)
+#test <- FindClusters(object = test,
+#                     reduction.type = "pca",
+#                     dims.use = 1:10,
+#                     resolution = 0.8,
+#                     print.output = FALSE)
 
 # plot two tSNE plots side by side, and colour points based on different criteria
 plot1 <- TSNEPlot(object = test,
@@ -525,45 +527,67 @@ plot1 <- TSNEPlot(object = test,
                   no.legend = TRUE,
                   do.label = TRUE)
 
-plot2 <- TSNEPlot(object = test,
-                  do.return = TRUE,
-                  group.by = "ClusterNames_0.6",
-                  no.legend = TRUE,
-                  do.label = TRUE)
+#plot2 <- TSNEPlot(object = test,
+#                  do.return = TRUE,
+#                  group.by = "ClusterNames_0.6",
+#                  no.legend = TRUE,
+#                  do.label = TRUE)
 
-plot_grid(plot1, plot2)
+#plot_grid(plot1, plot2)
 
 # Analyze TLR 7 & 8 levels as well as coreceptors in groups
 cluster.averages <- AverageExpression(object = test)
-
-head(x = cluster.averages[, 1:6])
+#head(x = cluster.averages[, 1:7])
 
 # Return this information as a Seurat object (enables downstream plotting
 # and analysis)
-cluster.averages <- AverageExpression(object = test, return.seurat = TRUE, show.progress = FALSE)
+cluster.averages <- AverageExpression(object = test, return.seurat = FALSE, show.progress = FALSE)
 
 # How can I plot the average expression of NK cells vs. T cells?  Pass
 # do.hover = T for an interactive plot to identify gene outliers
 CellPlot(object = cluster.averages, cell1 = "NK Cells", cell2 = "T-Cells")
 
 # Return the averages for individual genes across the groups
-
+# TLR data
+Tlr1 = cluster.averages["Tlr1", 1:7]
+Tlr2 = cluster.averages["Tlr2", 1:7]
+Tlr3 = cluster.averages["Tlr3", 1:7]
+Tlr4 = cluster.averages["Tlr4", 1:7]
+Tlr5 = cluster.averages["Tlr5", 1:7]
+Tlr6 = cluster.averages["Tlr6", 1:7]
 Tlr7 = cluster.averages["Tlr7", 1:7]
 Tlr8 = cluster.averages["Tlr8", 1:7]
-Myd88 = cluster.averages["Myd88", 1:7]
-Irf7 = cluster.averages["Irf7", 1:7]
-Traf3 = cluster.averages["Traf3", 1:7]
-Ikk = cluster.averages["Ikk", 1:7]
-Tbk1 = cluster.averages["Tbk1", 1:7]
+Tlr11 = cluster.averages["Tlr11", 1:7]
+Tlr = rbind(Tlr1, Tlr2, Tlr3, Tlr4, Tlr5, Tlr6, Tlr7, Tlr8, Tlr11)
 
-#
-Irak4 = cluster.averages["Irak4", 1:7]
-Irak1 = cluster.averages["Irak1", 1:7]
-#Irakm = cluster.averages["Irakm", 1:6]
-Traf6 = cluster.averages["Traf6", 1:7]
-#ubc13 = cluster.averages["ubc13", 1:6]
+# Nfkb 
 Nfkb1 = cluster.averages["Nfkb1", 1:7]
 Nfkb2 = cluster.averages["Nfkb2", 1:7]
-Tollip = cluster.averages["Tollip", 1:7]
+Nfkbia = cluster.averages["Nfkbia", 1:7]
+Nfkbib = cluster.averages["Nfkbib", 1:7]
+Nfkbid = cluster.averages["Nfkbid", 1:7]
+Nfkbie = cluster.averages["Nfkbie", 1:7]
+Nfkbil1 = cluster.averages["Nfkbil1", 1:7]
+Nfkbiz = cluster.averages["Nfkbiz", 1:7]
+Nfkb = rbind(Nfkb1, Nfkb2, Nfkbia, Nfkbib, Nfkbid, Nfkbie, Nfkbil1, Nfkbiz)
 
-Tlr_pathway = rbind(Tlr7, Tlr8, Myd88, Irf7, Traf3, Tbk1, Irak4, Irak1, Traf6, Nfkb1, Nfkb2, Tollip)
+# Other pathway components
+Myd88 = cluster.averages["Myd88", 1:7]
+Irf3 = cluster.averages["Irf3", 1:7]
+Irf7 = cluster.averages["Irf7", 1:7]
+Traf3 = cluster.averages["Traf3", 1:7]
+Irak1 = cluster.averages["Irak1", 1:7]
+Irak4 = cluster.averages["Irak4", 1:7]
+Traf6 = cluster.averages["Traf6", 1:7]
+Tollip = cluster.averages["Tollip", 1:7]
+Ikk = cluster.averages["Ikk", 1:7]
+Tbk1 = cluster.averages["Tbk1", 1:7]
+Tlr_pathway = rbind(Myd88, Irf3, Irf7, Traf3, Irak1, Irak4, Traf6, Tollip, Ikk, Tbk1) 
+
+# Plot data
+barplot(t(as.matrix(Tlr)), beside=TRUE, ylab = "Normalized Gene Expression", col = brewer.pal(7, "Set1"), 
+        legend = new.cluster.ids)
+barplot(t(as.matrix(Nfkb)), beside=TRUE, ylab = "Normalized Gene Expression", col = brewer.pal(7, "Set1"), 
+        legend = new.cluster.ids)
+barplot(t(as.matrix(Tlr_pathway)), beside=TRUE, ylab = "Normalized Gene Expression", col = brewer.pal(7, "Set1"), 
+        legend = new.cluster.ids)
